@@ -91,8 +91,7 @@ retail-dimensional-dw/
 ├── utils.py                       # Database connection configuration & data cleansing
 ├── main.py                        # Pipeline runner with execution timings
 ├── requirements.txt               # Python package dependencies
-├── .env.example                   # Database environment configuration template
-├── INTERVIEW_TALKING_POINTS.md    # Data Analyst interview guide & answers
+├── .env                           # Database environment configuration template
 └── README.md                      # Project documentation
 ```
 
