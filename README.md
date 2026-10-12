@@ -1,76 +1,76 @@
-# 🛒 Retail Dimensional Data Warehouse & PySpark ETL Pipeline
+# 🛒 Retail Analytics: Data Pipeline, Star Schema Warehouse & Power BI
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![Apache Spark](https://img.shields.io/badge/Apache%20Spark-3.5-E25A1C.svg?logo=apachespark&logoColor=white)](https://spark.apache.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Power BI](https://img.shields.io/badge/Power%20BI-Dashboarding-F2C811.svg?logo=powerbi&logoColor=black)](https://powerbi.microsoft.com/)
+[![SQL](https://img.shields.io/badge/SQL-Analytics-orange.svg?logo=sqlite&logoColor=white)](https://en.wikipedia.org/wiki/SQL)
 [![Apache Parquet](https://img.shields.io/badge/Format-Apache%20Parquet-teal.svg)](https://parquet.apache.org/)
 
-An enterprise-grade, end-to-end **ETL (Extract, Transform, Load)** data engineering pipeline built using **PySpark** and **PostgreSQL**. The pipeline processes multi-source retail operational datasets, cleanses and stages raw records, models the data into a **Star Schema Data Warehouse**, and exports analytical tables into columnar **Apache Parquet** format ready for BI visualization and OLAP queries.
+An end-to-end retail data analytics project demonstrating data ingestion, data warehousing (Star Schema design), SQL business analytics, and Power BI reporting. The pipeline ingests multi-source retail datasets, cleanses null values and date formats, models the data into a **Kimball Star Schema in PostgreSQL**, and exports analytical tables into columnar **Parquet** files for dashboard consumption.
+
+> 📖 **Interview Preparation**: Check out the [Interview Talking Points & Cheat Sheet](INTERVIEW_TALKING_POINTS.md) for plain-English explanations of all architecture decisions and business insights.
 
 ---
 
-## 🏗️ Architecture & Data Flow
+## 🏗️ Project Architecture & Data Flow
 
 ```text
        ┌────────────────────────┐
        │   Raw Retail Datasets   │  (Sales, Features, Stores CSVs)
        └───────────┬────────────┘
                    │
-                   ▼ [1. Extract Phase - PySpark]
+                   ▼ [1. Ingestion & Cleansing - Python / PySpark]
        ┌────────────────────────┐
        │  PostgreSQL (Staging)  │  Schema: `retail_stg`
-       │  - retail_stg.stores   │  (Cleaned nulls, normalized dates, typed schemas)
+       │  - retail_stg.stores   │  (Standardized dates, cleaned nulls, typed metrics)
        │  - retail_stg.features │
        │  - retail_stg.sales    │
        └───────────┬────────────┘
                    │
-                   ▼ [2. Transform Phase - PySpark Dimensional Modeling]
+                   ▼ [2. Dimensional Modeling - Star Schema]
        ┌────────────────────────┐
-       │ PostgreSQL (Warehouse) │  Schema: `retail_dw` (Star Schema)
-       │  - fact_sales          │  Fact table containing revenue & metrics
-       │  - dim_store           │  Store metadata & attributes
-       │  - dim_dept            │  Department lookup
-       │  - dim_date            │  Calendar dimensions (day, month, year, week)
-       │  - dim_feature         │  Economic conditions (CPI, Fuel, Markdowns)
+       │ PostgreSQL (Warehouse) │  Schema: `retail_dw`
+       │  - fact_sales          │  Central fact table (weekly_sales, markdowns)
+       │  - dim_store           │  Store types and sizes
+       │  - dim_dept            │  Department numbers
+       │  - dim_date            │  Calendar attributes (day, month, year, week)
+       │  - dim_feature         │  Economic conditions (CPI, Fuel Price, Unemployment)
        └───────────┬────────────┘
                    │
-                   ▼ [3. Load Phase - Export to Columnar Parquet]
-       ┌────────────────────────┐
-       │ Analytical Parquet DW  │  Stored in `output/parquet/`
-       │  - dim_*.parquet       │  High compression, columnar read performance
-       │  - fact_sales.parquet  │
-       └───────────┬────────────┘
-                   │
-                   ▼
-       ┌────────────────────────┐
-       │  Power BI / Analytics  │  Dashboards, KPI tracking, and trend analysis
-       └────────────────────────┘
+                   ├───────────────────────────────────┐
+                   ▼ [3. SQL Analytics]               ▼ [4. BI Consumption]
+       ┌────────────────────────┐         ┌────────────────────────┐
+       │  Analytical SQL Queries │         │  Power BI Dashboards   │
+       │  (Holiday lift, trends, │         │  (Exported Parquet /   │
+       │  department revenue)    │         │  Live PostgreSQL DW)   │
+       └────────────────────────┘         └────────────────────────┘
 ```
 
 ---
 
 ## 📐 Dimensional Data Model (Star Schema)
 
-The analytical data warehouse follows Kimball star schema methodology to support fast slice-and-dice queries:
+This data model follows Kimball dimensional modeling to optimize query performance and make DAX calculations simple:
 
-| Table | Type | Key Columns | Description |
+| Table | Type | Primary / Foreign Keys | Description |
 | :--- | :--- | :--- | :--- |
-| **`fact_sales`** | Fact | `store`, `date`, `dept` | Contains `weekly_sales` grain combined with corresponding environmental variables (CPI, Unemployment, Markdowns). |
-| **`dim_store`** | Dimension | `store` | Contains store classification (`type`) and square footage (`size`). |
+| **`fact_sales`** | Fact | `store`, `date`, `dept` | Stores metrics including `weekly_sales`, temperature, fuel price, and markdown promotions. |
+| **`dim_store`** | Dimension | `store` | Contains store categorization (`type` A/B/C) and square footage (`size`). |
 | **`dim_dept`** | Dimension | `dept` | Department lookup dimension. |
-| **`dim_date`** | Dimension | `date` | Expanded calendar attributes (`day`, `month`, `year`, `week of year`). |
-| **`dim_feature`** | Dimension | `store`, `date` | Regional economic & promotional conditions (temperature, fuel price, markdown promotions 1–5). |
+| **`dim_date`** | Dimension | `date` | Calendar dimension with `day`, `month`, `year`, and `week` of the year. |
+| **`dim_feature`** | Dimension | `store`, `date` | Regional macroeconomic conditions (CPI, Unemployment, Fuel Price). |
 
 ---
 
-## ⚙️ Tech Stack & Key Design Choices
+## 📊 Business Questions Answered via SQL
 
-- **PySpark**: Distributed data processing engine utilized for schema inference, data cleansing, feature parsing, and relational star schema modeling.
-- **PostgreSQL 15**: Relational staging (`retail_stg`) and data warehouse layer (`retail_dw`).
-- **Apache Parquet & PyArrow**: Columnar analytical storage format offering high compression ratios and fast columnar scans for downstream BI tools.
-- **Docker Compose**: One-command reproducible local infrastructure containerizing PostgreSQL with automated schema initialization.
-- **python-dotenv**: Environment configuration decoupling database credentials from application source code.
+The repository includes a ready-to-run analytical SQL suite in [`sql/analysis_queries.sql`](sql/analysis_queries.sql):
+
+1. **Store Performance Analysis**: Compare total revenue and average weekly sales across store formats (`Type A`, `Type B`, `Type C`).
+2. **Holiday Impact Analysis**: Quantify sales lift during holiday weeks vs normal operating weeks.
+3. **Department Profitability**: Identify the top 10 revenue-generating departments across all retail branches.
+4. **Monthly Seasonality**: Track month-over-month revenue trends to identify seasonal peak periods (e.g. Q4 spikes).
+5. **Promotional Markdown Effectiveness**: Evaluate the correlation between active promotional markdown campaigns and sales volume.
 
 ---
 
@@ -79,39 +79,38 @@ The analytical data warehouse follows Kimball star schema methodology to support
 ```text
 retail-dimensional-dw/
 ├── Retail Store Datasets/
-│   └── Dataset 1/               # Raw input CSV datasets (sales, features, stores)
+│   └── Dataset 1/                 # Raw retail CSV files (sales, features, stores)
 ├── sql/
-│   └── init.sql                 # DDL script initializing staging & dw schemas
+│   ├── init.sql                   # DDL to initialize retail_stg and retail_dw schemas
+│   └── analysis_queries.sql       # Business analytical SQL queries
 ├── output/
-│   └── parquet/                 # Output directory for exported Parquet tables
-├── extract.py                   # Stage 1: Ingests raw CSVs -> PostgreSQL retail_stg
-├── transform.py                 # Stage 2: Transforms staging data -> Star schema retail_dw
-├── load.py                      # Stage 3: Converts retail_dw tables -> Parquet files
-├── utils.py                     # Reusable SparkSession factory, DB configs & cleansing
-├── main.py                      # Unified pipeline orchestrator with stage timings
-├── docker-compose.yml           # Local PostgreSQL service container
-├── requirements.txt             # Python project dependencies
-├── .env.example                 # Environment configuration template
-└── README.md                    # Project documentation
+│   └── parquet/                   # Columnar Parquet exports for Power BI
+├── extract.py                     # Stage 1: Ingests raw CSVs -> PostgreSQL retail_stg
+├── transform.py                   # Stage 2: Transforms staging data -> Star Schema retail_dw
+├── load.py                        # Stage 3: Exports retail_dw tables -> Parquet format
+├── utils.py                       # Database connection configuration & data cleansing
+├── main.py                        # Pipeline runner with execution timings
+├── requirements.txt               # Python package dependencies
+├── .env.example                   # Database environment configuration template
+├── INTERVIEW_TALKING_POINTS.md    # Data Analyst interview guide & answers
+└── README.md                      # Project documentation
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quickstart Guide
 
 ### 1. Prerequisites
 - Python 3.9+
-- Docker & Docker Compose (or a local PostgreSQL instance)
-- Java 8, 11, or 17 (required by Apache Spark)
+- PostgreSQL database
+- Power BI Desktop (for visualizations)
 
-### 2. Clone the Repository
+### 2. Setup Environment & Dependencies
 ```bash
+# Clone the repository
 git clone https://github.com/rohan-karyappa/retail-dimensional-dw.git
 cd retail-dimensional-dw
-```
 
-### 3. Set Up Virtual Environment & Dependencies
-```bash
 # Create and activate virtual environment
 python -m venv .venv
 
@@ -120,53 +119,41 @@ python -m venv .venv
 # macOS/Linux:
 source .venv/bin/activate
 
-# Install requirements
+# Install required Python libraries
 pip install -r requirements.txt
 ```
 
-### 4. Start PostgreSQL with Docker
-Spin up PostgreSQL with the required `retail_stg` and `retail_dw` schemas automatically created:
-```bash
-docker compose up -d
-```
+### 3. Configure Database
+1. In PostgreSQL, run [`sql/init.sql`](sql/init.sql) to create the schemas:
+   ```sql
+   CREATE SCHEMA IF NOT EXISTS retail_stg;
+   CREATE SCHEMA IF NOT EXISTS retail_dw;
+   ```
+2. Copy `.env.example` to `.env` and set your database connection details:
+   ```bash
+   cp .env.example .env
+   ```
 
-### 5. Configure Environment Variables
-Copy the environment template:
-```bash
-cp .env.example .env
-```
-*(Default settings match the Docker Compose configuration: `localhost:5432`, `user: postgres`, `password: postgres`)*.
-
----
-
-## 🏃 Running the Pipeline
-
-### Option A: Run the End-to-End Orchestrator (Recommended)
-Execute all three stages in sequence with timing metrics and unified SparkSession:
+### 4. Run the Pipeline
+Run the full pipeline with a single command:
 ```bash
 python main.py
 ```
-
-### Option B: Run Individual Pipeline Stages
-You can also run each stage independently:
+Or run each stage independently:
 ```bash
-# 1. Ingest raw CSVs to PostgreSQL staging
-python extract.py
-
-# 2. Transform staging into Dimensional Data Warehouse
-python transform.py
-
-# 3. Export Data Warehouse tables to Parquet
-python load.py
+python extract.py     # Ingest CSVs into staging
+python transform.py   # Transform staging into Star Schema warehouse
+python load.py        # Export analytical tables to Parquet
 ```
 
 ---
 
-## 📊 Analytics & BI Integration
+## 📈 Power BI Integration
 
-Once the pipeline completes, analytical tables are available in two formats:
-1. **Live PostgreSQL Connection**: Connect Power BI, Tableau, or Metabase directly to the `retail_dw` schema.
-2. **Offline Columnar Parquet**: Parquet files stored in `output/parquet/` can be imported directly into Power BI, DuckDB, or AWS Athena for high-speed OLAP queries.
+1. Open **Power BI Desktop**.
+2. **Connect via Database**: Choose `PostgreSQL database` ➔ connect to `localhost:5432/postgres` ➔ select tables under `retail_dw`.
+3. **Connect via Parquet (Offline)**: Choose `Get Data` ➔ `Parquet` ➔ select files from `output/parquet/`.
+4. Establish 1-to-many relationships from dimension tables (`dim_store`, `dim_date`, `dim_dept`) to `fact_sales`.
 
 ---
 
