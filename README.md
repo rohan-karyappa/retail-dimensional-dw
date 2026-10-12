@@ -8,8 +8,6 @@
 
 An end-to-end retail data analytics project demonstrating data ingestion, data warehousing (Star Schema design), SQL business analytics, and Power BI reporting. The pipeline ingests multi-source retail datasets, cleanses null values and date formats, models the data into a **Kimball Star Schema in PostgreSQL**, and exports analytical tables into columnar **Parquet** files for dashboard consumption.
 
-> 📖 **Interview Preparation**: Check out the [Interview Talking Points & Cheat Sheet](INTERVIEW_TALKING_POINTS.md) for plain-English explanations of all architecture decisions and business insights.
-
 ---
 
 ## 🏗️ Project Architecture & Data Flow
@@ -91,7 +89,6 @@ retail-dimensional-dw/
 ├── utils.py                       # Database connection configuration & data cleansing
 ├── main.py                        # Pipeline runner with execution timings
 ├── requirements.txt               # Python package dependencies
-├── .env                           # Database environment configuration template
 └── README.md                      # Project documentation
 ```
 
@@ -128,10 +125,12 @@ pip install -r requirements.txt
    CREATE SCHEMA IF NOT EXISTS retail_stg;
    CREATE SCHEMA IF NOT EXISTS retail_dw;
    ```
-2. Copy `.env.example` to `.env` and set your database connection details:
-   ```bash
-   cp .env.example .env
-   ```
+2. Database connection defaults in `utils.py` point to:
+   - Host: `localhost:5432`
+   - User: `postgres`
+   - Password: `postgres`
+   - Database: `postgres`  
+   *(You can update credentials in `utils.py` or set standard environment variables).*
 
 ### 4. Run the Pipeline
 Run the full pipeline with a single command:

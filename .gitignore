@@ -28,7 +28,6 @@ ENV/
 
 # Environment Variables
 .env
-!.env.example
 
 # Pipeline Outputs
 output/
